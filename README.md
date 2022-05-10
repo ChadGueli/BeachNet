@@ -6,6 +6,8 @@ The M5-Uncertainty challenge, like the previous M\* challenges was an attempt to
 
 My solution involves using the ideas from [WaveNet](https://arxiv.org/pdf/1609.03499.pdf) and deconvolving at the end of each layer to take a time series with Nx1 input and mapping it to a 30x9 output. Doing this required implementing a lot of things.
 
+No, I didn't feel that drop out would provide suitable estimates of the quantiles. My reasoning is simple, each time series is an individual observation with dependent components, so there is no long run anything to reasonably rely upon for a Gaussian approximation.
+
 Firstly, I had to implement a 2D convolution that was causal in the time dimension but not in the quantile dimension. This was simply a matter of not padding the "front" of the data.
 
 Then, I created a causal seperable 2D convolution. This is similar to the causal 2D convolution, but obviously, seperable.
