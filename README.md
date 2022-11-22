@@ -1,21 +1,15 @@
 # BeachNet
 
-This repo is a Jupyter notebook containing modules that I created in 2020 for the [M5 - Uncertainty](https://www.kaggle.com/c/m5-forecasting-uncertainty) challenge, but never submitted.
+When running a store, it is important to understand the amount of inventory that will be needed in the future, so that enough can be purchased and ideally all of it can be sold. As such, inventory is an investment, and because of the stochastic nature of consumer habits, it is important to understand the risk in investing in inventory.
 
-Like the previous M\* challenges, the M5-Uncertainty challenge was an attempt to further the theory of time series modeling.
-
-This particular challenge focused on predicting the distribution of an estimate, participants had to predict the distributions of hundreds of products 30 days into the future. The data was provided by Walmart.
-
-The predictions were evaluated using the [pinball loss](https://www.lokad.com/pinball-loss-function-definition) of 9 quantiles from the predicted distributions.
-
-While reading this notebook, please keep in mind it is written in TF2.3 before support for specifying padding in each direction was added.
+This model helps decision makers understand and plan for the risk of under or over stocking by estimating future sales distributions. The initial model was trained on the [M5 data](https://www.kaggle.com/c/m5-forecasting-uncertainty), so it takes into account heirarchical info like region, store, and dept. 
 
 ## Idea
-My solution involves using the ideas from [WaveNet](https://arxiv.org/pdf/1609.03499.pdf) and deconvolving at the end of each block to take a time series with Nx1 input and map it to a 30x9 output.
+My solution involves using the ideas from [WaveNet](https://arxiv.org/pdf/1609.03499.pdf) and deconvolving at the end of each block to take a time series with Nx1 input and map it to a 30x9 output. This gives an estimation of 9 quantiles of the distribution 30 days into the future.
 
-Before going any further, it is worth noting that dropout would have been inappropriate as it allows estimation of uncertainty about the estimate, not the target. 
+Before going any further, it is worth noting that using dropout to estimate the distribution relies on assuming normality. However, given the small number of purchases in some cases, and the mixed distributions involved, I felt that this assumption was a bit of a stretch.
 
-Additionally, I decided against an output sequence with 9 filters because it enabled smaller kernels. For example, applying a 1D conv of size 3 to K features for each of Q quantiles in a tensor of size KQxNx1 (CxWxH) would take a kernel of size 3KQN. Where a 2D conv of size 3x3 applied to a KxNxQ tensor would require a kernel only of size 9KN.
+Additionally, I decided against a modeling the quantiles in the channels dimension to reduce memory. Applying a 1D conv of size 3 to K features for each of Q quantiles in a tensor of size KQxNx1 (CxWxH) would take a kernel of size 3KQN. Where a 2D conv of size 3x3 applied to a KxNxQ tensor would require a kernel only of size 9KN.
 
 ## Implementation
 I began by implementing a 2D convolution that was causal in the time dimension but not in the quantile dimension. This was simply a matter of not padding the "front" of the data; i.e. the next time steps.
@@ -31,7 +25,7 @@ The code is provided as is, the neural architecture search, model object, and tr
 ## Things I'd Do Differently
 Remove the deconvolutions because they lead to checkerboard patterns, as discussed by Odena, et. al. [(2016)](https://distill.pub/2016/deconv-checkerboard/).
 
-Start my NAS with a lot of layers to initially process the series in its 1D form.
+Start my NAS with a lot of layers that initially process the series in its 1D form.
 
 Use some bidirectional feature pyramid network layers, as proposed by Tan, et. al. [(2019)](https://arxiv.org/pdf/1911.09070.pdf), with fixed length and depth, but variable width.
 
